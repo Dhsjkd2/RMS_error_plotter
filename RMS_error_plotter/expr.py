@@ -40,10 +40,19 @@ def compile_expr(expr: str) -> Callable[[dict[str, float]], float]:
     tree = ast.parse(expr, mode="eval")
 
     for node in ast.walk(tree):
-        ...
+        if not isinstance(node, _ALLOWED_NODES):
+            raise ValueError(f"Unsupported expression element: {ast.dump(node)}")
+        if isinstance(node, ast.Call):
+            if not isinstance(node.func, ast.Name) or node.func.id not in _SUPPORTED_FUNCS:
+                raise ValueError(f"Unsupported function: {ast.dump(node)}")
+        if isinstance(node, ast.Name):
+            pass
+    code = compile(tree, filename="<expr>", mode="eval")
 
     def f(vars: dict[str, float]) -> float:
-
-        return float()
-
+        scope: Dict[str, Any] = {}
+        scope.update(_SUPPORTED_FUNCS)
+        scope.update(_SUPPORTED_CONSTS)
+        scope.update(vars)
+        return float(eval(code, {"__builtins__": {}}, scope))
     return f

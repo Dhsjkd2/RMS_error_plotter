@@ -1,5 +1,7 @@
 import argparse
 from pathlib import Path
+from core import rms_sweep
+from expr import compile_expr
 
 def init_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
@@ -23,4 +25,8 @@ def init_parser() -> argparse.ArgumentParser:
     return p
 
 def main(argc:int, argv:list[str] | None = None) -> int:
+    expresssion = compile_expr()
+
+    rms_values = rms_sweep()
+
     return 0
