@@ -1,7 +1,27 @@
 import argparse
+import csv
 from pathlib import Path
 from core import rms_sweep
 from expr import compile_expr
+
+def write_csv(path: Path, xcol: str, ycols: str, data: any, fieldnames: list[str]) -> None:
+    with path.open(path, "w", newline="") as f:
+        writer = csv.writer(f, fieldnames=fieldnames)
+        # write header
+        writer.writeheader()
+        # write data
+        writer.writerows(data)
+        
+
+def read_csv(path: Path, xcol: str, ycol: str, delimiter: str) -> tuple[list[float], list[float]]:
+    with path.open(path, "r", newline="") as f:
+        reader = csv.DictReader(f, delimiter=delimiter)
+        x_values: list[float] = []
+        y_values: list[float] = []
+        for row in reader:
+            x_values.append(float(row[xcol]))
+            y_values.append(float(row[ycol]))
+    return x_values, y_values
 
 def init_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
@@ -24,9 +44,27 @@ def init_parser() -> argparse.ArgumentParser:
     p.add_argument("--out", type=Path, help="Input the path to save the output plot. If not given, a default path will be used.")
     return p
 
-def main(argc:int, argv:list[str] | None = None) -> int:
-    expresssion = compile_expr()
+def main() -> int:
+    parser = init_parser()
+    argv = parser.parse_args()
+
+    # Input validation
+    
+    for arg in argv.values:
+        ...
+    
+    # Run the Sweep
+    expression = compile_expr()
 
     rms_values = rms_sweep()
+
+    # Write to output
+
+    if "out" not in argv:
+        # Write to default file path
+        ...
+    else:
+        # Write to given file path
+        ...
 
     return 0
