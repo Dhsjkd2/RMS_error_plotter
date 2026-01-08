@@ -4,17 +4,18 @@ from pathlib import Path
 from core import rms_sweep
 from expr import compile_expr
 
-def write_csv(path: Path, xcol: str, ycols: str, data: any, fieldnames: list[str]) -> None:
-    with path.open(path, "w", newline="") as f:
-        writer = csv.writer(f, fieldnames=fieldnames)
-        # write header
+def write_csv(path: Path = "", xcol: str | None = None, ycols: str | None = None, data: any = None, fieldnames: list[str] | None = None) -> None:
+    if not fieldnames:
+        raise ValueError("fieldnames must be a non-empty list")
+
+    with path.open("w", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
-        # write data
         writer.writerows(data)
         
 
 def read_csv(path: Path, xcol: str, ycol: str, delimiter: str) -> tuple[list[float], list[float]]:
-    with path.open(path, "r", newline="") as f:
+    with path.open("r", newline="") as f:
         reader = csv.DictReader(f, delimiter=delimiter)
         x_values: list[float] = []
         y_values: list[float] = []
@@ -49,22 +50,34 @@ def main() -> int:
     argv = parser.parse_args()
 
     # Input validation
+    if not argv.csv.exists():
+        raise FileNotFoundError(f"CSV file not found: {argv.csv}")
     
-    for arg in argv.values:
-        ...
+    if argv.steps <= 0:
+        raise ValueError("Steps must be a positive integer")
     
-    # Run the Sweep
-    expression = compile_expr()
+    if argv.sweep_min >= argv.sweep_max:
+        raise ValueError("Sweep min must be less than sweep max")
+    
+    output_path = argv.out if argv.out else Path("results") / "sweep.csv"
+    output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    rms_values = rms_sweep()
+    x, y = read_csv(path=argv.csv, xcol=argv.xcol, ycol=argv.ycol, delimiter=argv.delimeter)
+
+    # Run the Sweep
+    expression = compile_expr(argv.expr)
+
+    increment = (argv.max - argv.min) / argv.steps
+    vals = [argv.sweep_min + i * increment for i in range(argv.steps + 1)]
+
+    rms_values = rms_sweep(expr=expression, x=x, y=y, sweep_name=argv.sweep, sweep_min=vals[0], sweep_max=vals[-1], steps=argv.steps, xname=argv.xname if argv.xname else "x")
 
     # Write to output
+    rows = []
 
-    if "out" not in argv:
-        # Write to default file path
-        ...
-    else:
-        # Write to given file path
-        ...
+    for i, rms in enumerate(rms_values):
+        rows.append({argv.sweep: vals[i], "RMS_Error": rms})
+
+    write_csv(path=output_path, data=rows, fieldnames=[argv.sweep, "RMS_Error"])
 
     return 0
